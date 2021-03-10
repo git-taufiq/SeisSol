@@ -45,6 +45,7 @@
   MODULE faultoutput_mod
   !---------------------------------------------------------------------------!
   USE TypesDef
+  USE mpi_f08
   !---------------------------------------------------------------------------!
   IMPLICIT NONE
   PRIVATE
@@ -842,7 +843,7 @@ CONTAINS
             IF( stat.NE.0) THEN
                logError(*) 'cannot open ',ptsoutfile
                logError(*) 'Error status: ', stat
-               call exit(134)
+               call MPI_ABORT(MPI_COMM_WORLD, 134)
             END IF
             !
             DO k=1,DISC%DynRup%DynRup_out_atPickpoint%CurrentPick(iOutPoints)

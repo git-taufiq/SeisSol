@@ -43,6 +43,7 @@
 MODULE calc_deltaT_mod
   !--------------------------------------------------------------------------
   USE TypesDef
+  USE mpi_f08
   !--------------------------------------------------------------------------
   IMPLICIT NONE
   PRIVATE
@@ -96,7 +97,7 @@ CONTAINS
     !                                                                            !
     IF (allocstat .NE. 0 ) THEN                                                  ! Error Handler
          logError(*) 'ALLOCATE ERROR in ini_calc_deltaT!'            ! Error Handler
-         call exit(134)                                                                    ! Error Handler
+         call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                    ! Error Handler
     END IF                                                                       ! Error Handler
     !                                                   !
     !                                                   !
@@ -165,7 +166,7 @@ CONTAINS
            IF ((.NOT.ASSOCIATED(OptionalFields%BackgroundValue))) THEN              
               logError(*) 'OptionalFields%BackgroundValue not associated!'
               logError(*) 'although linearized Equations are specified. '
-              call exit(134)                                                                
+              call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                
            END IF                                                                                                                              
            MaterialVal => OptionalFields%BackgroundValue           
            OptionalFields%vel(:) = SQRT( MaterialVal(:,4)**2 + MaterialVal(:,5)**2 + MaterialVal(:,6)**2 )

@@ -47,6 +47,7 @@ MODULE read_backgroundstress_mod
   !---------------------------------------------------------------------------!
   USE TypesDef
   USE COMMON_operators_mod
+  USE mpi_f08
   !---------------------------------------------------------------------------!
   IMPLICIT NONE
   PRIVATE
@@ -271,7 +272,7 @@ CONTAINS
 !~         posx_min.LT.xf_min .OR. posz_min.LT.zf_min)THEN
 !~         logError(*) 'Background stress field ',TRIM(IO%FileName_BackgroundStress),   &
 !~                     ' does not fully include the entire fault!'
-!~         call exit(134)
+!~         call MPI_ABORT(MPI_COMM_WORLD, 134)
 !~     ENDIF
 
     ! Interpolation of the background field onto the barycenter of the elements fault face
@@ -310,7 +311,7 @@ CONTAINS
 !            write(111,*) posx(i),posz(i),EQN%IniShearXY(i,1)
 !            enddo
 !            close(111)
-!            call exit(134)
+!            call MPI_ABORT(MPI_COMM_WORLD, 134)
         
     ELSEIF (GPwise == 1) THEN
         counter = 0
@@ -342,7 +343,7 @@ CONTAINS
 !            enddo
 !            enddo
 !            close(111)
-!            call exit(134)             
+!            call MPI_ABORT(MPI_COMM_WORLD, 134)             
     ENDIF ! GPwise
 
 

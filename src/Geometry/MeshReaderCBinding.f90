@@ -140,7 +140,7 @@ contains
                                     disc%galerkin%clusteredLts                  )
         else
             logError(*) 'Unknown mesh reader'
-            call exit(134)
+            call MPI_ABORT(m_mpi%commWorld, 134)
         endif
 
         ! Set additional SeisSol variables

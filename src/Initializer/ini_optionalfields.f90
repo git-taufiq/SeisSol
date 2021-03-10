@@ -41,6 +41,7 @@
 MODULE ini_OptionalFields_mod
   !----------------------------------------------------------------------------
   USE TypesDef
+  USE mpi_f08
   !----------------------------------------------------------------------------
   IMPLICIT NONE
   PRIVATE
@@ -105,7 +106,7 @@ CONTAINS
     IF (SUM(ABS(allocStat(:))).NE.0) THEN                                       
        logError(*) 'Allocation error in ini_opt_fields. '
        logError(*) 'Status: ', allocstat(:)
-       call exit(134)                                                                    
+       call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                    
     END IF                                                                              
     !
   END SUBROUTINE ini_OptionalFields

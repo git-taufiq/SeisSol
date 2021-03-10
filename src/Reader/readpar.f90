@@ -45,6 +45,7 @@ MODULE COMMON_readpar_mod
   !----------------------------------------------------------------------------
   USE TypesDef
   USE COMMON_operators_mod
+  USE mpi_f08
   !----------------------------------------------------------------------------
   IMPLICIT NONE
   PRIVATE
@@ -114,7 +115,7 @@ CONTAINS
        DISC%CalledFromStructCode = .FALSE.                                   !
     ELSE                                                                     !
        logError(*) 'No MESH-Type in Argumentlist of readpar!'
-       call exit(134)                                                                  !
+       call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                  !
     END IF                                                                   !
     !                                                                        !
     call getParameterFile(IO%ParameterFile)
@@ -124,7 +125,7 @@ CONTAINS
     if(existence)then
     else
        logError(*) 'You did not specify a valid parameter-file'
-       call exit(134)
+       call MPI_ABORT(MPI_COMM_WORLD, 134)
     endif
     !
     logInfo0(*) '<  Parameters read from file: ', TRIM(IO%ParameterFile) ,'              >'
@@ -169,7 +170,7 @@ CONTAINS
     backspace(FID)
     read(FID,fmt='(A)') line
     logError(*) 'invalid line in namelist '//trim(NMLname)//': '//trim(line)
-    call exit(134)
+    call MPI_ABORT(MPI_COMM_WORLD, 134)
     RETURN
 
   END SUBROUTINE
@@ -291,7 +292,7 @@ CONTAINS
 #if defined(USE_PLASTICITY)
     if (Plasticity .eq. 0) then
       logError(*) 'Plasticity is disabled, but this version was compiled with Plasticity.'
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
     endif
 #endif
 
@@ -302,7 +303,7 @@ CONTAINS
     CASE(1)
 #if !defined(USE_PLASTICITY)
        logError(*) 'Plasticity is assumed, but this version was not compiled with Plasticity.'
-       call exit(134)
+       call MPI_ABORT(MPI_COMM_WORLD, 134)
 #else
        logInfo0(*) '(Drucker-Prager) plasticity assumed .'
 
@@ -320,7 +321,7 @@ CONTAINS
         logInfo0(*) 'Plastic relaxation Tv is set to: ', EQN%Tv
     CASE DEFAULT
       logError(*) 'Choose 0 or 1 as plasticity assumption. '
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
     END SELECT
 
 
@@ -345,7 +346,7 @@ CONTAINS
        EQN%nBackgroundVar  = 3 + EQN%nMechanisms * 4
     CASE DEFAULT
       logError(*) 'Choose 0 or 1 as anelasticity assumption. '
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
     END SELECT
 
     DISC%Galerkin%CKMethod = 0
@@ -359,7 +360,7 @@ CONTAINS
          EQN%Adjoint = Adjoint
       CASE DEFAULT
         logError(*) 'Choose 0, 1 as adjoint wavefield assumption. '
-        call exit(134)
+        call MPI_ABORT(MPI_COMM_WORLD, 134)
       END SELECT
     
     EQN%Anisotropy = Anisotropy
@@ -376,7 +377,7 @@ CONTAINS
       EQN%nNonZeroEV = 3
     CASE DEFAULT
       logError(*) 'Choose 0 or 1 as anisotropy assumption. '
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
     END SELECT
 
     IF(EQN%Adjoint.EQ.1) THEN
@@ -386,12 +387,12 @@ CONTAINS
     inquire(file=MaterialFileName , exist=fileExists)
     if (.NOT. fileExists) then
      logError(*) 'Material file "', trim(MaterialFileName), '" does not exist.'
-     call exit(134)
+     call MPI_ABORT(MPI_COMM_WORLD, 134)
     endif
     inquire(file=BoundaryFileName , exist=fileExists)
     if (.NOT. (BoundaryFileName == "") .AND. (.NOT. fileExists)) then
      logError(*) 'Boundary file "', trim(BoundaryFileName), '" does not exist.'
-     call exit(134)
+     call MPI_ABORT(MPI_COMM_WORLD, 134)
     endif
 
     !
@@ -402,7 +403,7 @@ CONTAINS
 #if NUMBER_OF_RELAXATION_MECHANISMS != 0
     IF ((EQN%FreqCentral.EQ.0.0) .OR. (EQN%FreqRatio.EQ.0.0)) THEN
         logError(*) 'FreqCentral or FreqRatio not defined'
-        call exit(134) 
+        call MPI_ABORT(MPI_COMM_WORLD, 134) 
     ENDIF
 #endif
     !
@@ -419,7 +420,7 @@ CONTAINS
                ' system (X,Y,Z) chosen'          !
     ELSE                                                          !
         logError(*) 'wrong coordinate system chosen! '
-        call exit(134)
+        call MPI_ABORT(MPI_COMM_WORLD, 134)
     END IF                                                        !
     !                                                             !
   END SUBROUTINE readpar_equations
@@ -592,7 +593,7 @@ CONTAINS
        logError(*) 'none of the possible'           ,&
             ' initial conditions was chosen'
        logError(*) TRIM(IC%cICType),'|'
-       call exit(134)
+       call MPI_ABORT(MPI_COMM_WORLD, 134)
     END SELECT
     !
     logInfo(*) 'to calculate the initial values.'
@@ -670,7 +671,7 @@ CONTAINS
       IF (allocStat .NE. 0) THEN
             logError(*) 'could not allocate',&
                  ' all variables! Ie. Unstructured record Points'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
       END IF
       !
       DISC%DynRup%DynRup_out_atPickpoint%RecPoint(:)%X = X(:)
@@ -724,7 +725,7 @@ CONTAINS
     if (printIntervalCriterion.EQ.1) THEN
         DISC%DynRup%DynRup_out_elementwise%printtimeinterval = printtimeinterval   ! read time interval at which output will be written
         logError(*) 'The generated kernels version does no longer support printIntervalCriterion = 1 for elementwise fault output'
-        call exit(134)
+        call MPI_ABORT(MPI_COMM_WORLD, 134)
     else
         DISC%DynRup%DynRup_out_elementwise%printtimeinterval_sec = printtimeinterval_sec   ! read time interval at which output will be written
     endif
@@ -744,7 +745,7 @@ CONTAINS
         DISC%DynRup%DynRup_out_elementwise%refinement_strategy.NE.1 .AND. &
         DISC%DynRup%DynRup_out_elementwise%refinement_strategy.NE.0) THEN
         logError(*) 'Undefined refinement strategy for fault output!'
-        call exit(134)
+        call MPI_ABORT(MPI_COMM_WORLD, 134)
     ENDIF
 
     DISC%DynRup%DynRup_out_elementwise%refinement = refinement                 ! read info of desired refinement level : default 0
@@ -839,7 +840,7 @@ CONTAINS
           !                                                                                        !
           IF (allocStat .NE. 0) THEN                                                               ! Error Handler
              logError(*) 'could not allocate surface wall variables!'                              ! Error Handler
-             call exit(134)                                                                                  ! Error Handler
+             call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                                  ! Error Handler
           END IF                                                                                   ! Error Handler
       ENDIF
       !----------------------------------------------------------------------------------------!
@@ -886,7 +887,7 @@ CONTAINS
          !
          IF (allocStat .NE. 0) THEN                                                          ! Error Handler
             logError(*) 'could not allocate Inflow variables!'                               ! Error Handler
-            call exit(134)                                                                             ! Error Handler
+            call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                             ! Error Handler
          END IF                                                                              ! Error Handler
       call readinfl(BND, IC, EQN, IO, DISC, BC_if)
       END IF
@@ -906,7 +907,7 @@ CONTAINS
          !                                                                                   !
          IF (allocStat .NE. 0) THEN                                                          ! Error Handler
             logError(*) 'could not allocate Outflow wall variables!'      ! Error Handler
-            call exit(134)                                                                             ! Error Handler
+            call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                             ! Error Handler
          END IF                                                                              ! Error Handler
       END IF                                                                                 !
       !                                                                                      !
@@ -1010,7 +1011,7 @@ CONTAINS
     inquire(file=ModelFileName , exist=fileExists)
     if (.NOT. fileExists) then
      logError(*) 'Dynamic rupture model file "', trim(ModelFileName), '" does not exist.'
-     call exit(134)
+     call MPI_ABORT(MPI_COMM_WORLD, 134)
     endif
     !
     DISC%DynRup%ModelFileName = ModelFileName
@@ -1036,7 +1037,7 @@ CONTAINS
              EQN%RS_sv0 = RS_sv0
            CASE DEFAULT
              logError(*) 'Unknown Stress Background Type: ',DISC%DynRup%BackgroundType
-             call exit(134)
+             call MPI_ABORT(MPI_COMM_WORLD, 134)
            END SELECT
 
            !FRICTION SETTINGS
@@ -1082,7 +1083,7 @@ CONTAINS
              ENDIF
            CASE DEFAULT
              logError(*) 'Unknown friction law ',EQN%FL
-             call exit(134)
+             call MPI_ABORT(MPI_COMM_WORLD, 134)
            END SELECT
 
            !OUTPUT
@@ -1136,7 +1137,7 @@ CONTAINS
                 call readpar_faultAtPickpoint(EQN,BND,IC,DISC,IO,CalledFromStructCode)
            ELSE
                logError(*) 'Unkown fault output type (e.g.3,4,5)',DISC%DynRup%OutputPointType
-               call exit(134)
+               call MPI_ABORT(MPI_COMM_WORLD, 134)
            ENDIF ! DISC%DynRup%OutputPointType
   !
   END SUBROUTINE
@@ -1200,7 +1201,7 @@ CONTAINS
                 IF(IC%cICType.NE.'Char_Gauss_Puls') THEN
                   logError(*) 'Inflow boundary condition Char_Gauss_Puls only available with '
                   logError(*) 'corresponding Char_Gauss_Puls initial condition '
-                  call exit(134)
+                  call MPI_ABORT(MPI_COMM_WORLD, 134)
                 ENDIF
                 BND%ObjInflow(i)%InflowType   = 1
 
@@ -1281,7 +1282,7 @@ CONTAINS
            CASE DEFAULT
                logError(*) 'Inflow conditions specified are unknown!'
                logError(*) TRIM(char_option(1:startComment-1)),'|'
-               call exit(134)
+               call MPI_ABORT(MPI_COMM_WORLD, 134)
             END SELECT
          END IF
       ENDDO
@@ -1771,7 +1772,7 @@ CONTAINS
 
        CASE DEFAULT
           logError(*)  'The format type of the Finite Source Rupture Model is unknown! '
-          call exit(134)                                                                                   
+          call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                                   
 
        END SELECT
 
@@ -1828,7 +1829,7 @@ CONTAINS
       SOURCE%NRFFileName = FileName
 #ifndef USE_NETCDF
       logError(*) 'NRF sources require netcdf support.'
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
 #endif
 
     CASE(50) !Finite sources with individual slip rate history for each subfault
@@ -1898,7 +1899,7 @@ CONTAINS
        !
     CASE DEFAULT                                                                                   !
        logError(*)  'The sourctype specified (', SOURCE%Type, ') is unknown! '                  !
-       call exit(134)                                                                                       
+       call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                                       
     END SELECT                                                                                     !
 
                                                                                                    !
@@ -1908,7 +1909,7 @@ CONTAINS
       SOURCE%TimeGP%nPulseSource = nPulseSource
       IF(SOURCE%Ricker%nRicker.EQ.0.AND.SOURCE%TimeGP%nPulseSource.EQ.0) THEN
         logError(*)  'Adjoint simulations require point sources of type 16, 18 or 19! '                  !
-        call exit(134)
+        call MPI_ABORT(MPI_COMM_WORLD, 134)
       ENDIF
       !
       count=0
@@ -2172,7 +2173,7 @@ ALLOCATE( SpacePositionx(nDirac), &
     CASE default
        !WRITE(IO%UNIT%errOut,*)  '|   The option is not valid! 0 '        , &
        !     'disables, 1 enables the sponge layer, 2 takes PML and 3 CPML '
-       !call exit(134)
+       !call MPI_ABORT(MPI_COMM_WORLD, 134)
        !
     END SELECT
     !
@@ -2294,7 +2295,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           inquire( file=IO%MeshFile , exist=file_exits )
           if ( .NOT.file_exits ) then
              logError(*) 'mesh file ',IO%MeshFile,'does not exists'
-             call exit(134)
+             call MPI_ABORT(MPI_COMM_WORLD, 134)
           endif
 
           !
@@ -2326,7 +2327,7 @@ ALLOCATE( SpacePositionx(nDirac), &
 
        CASE DEFAULT
           logError(*) 'Meshgenerator ', TRIM(IO%meshgenerator), ' is unknown!'
-          call exit(134)
+          call MPI_ABORT(MPI_COMM_WORLD, 134)
        END SELECT
     ! specify element type (3-d = tetrahedrons)
 
@@ -2338,7 +2339,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           MESH%nSideMax = 4
        ELSE
           logError(*) 'Wrong definition of meshgenerator.'
-          call exit(134)
+          call MPI_ABORT(MPI_COMM_WORLD, 134)
        ENDIF
 
        SELECT CASE (MESH%GlobalElemType)
@@ -2347,7 +2348,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           logInfo(*) 'Mesh type is', MESH%GlobalElemType
        CASE DEFAULT
           logError(*) 'MESH%GlobalElemType must be {4}, {6} or {7} '
-          call exit(134)
+          call MPI_ABORT(MPI_COMM_WORLD, 134)
        END SELECT
           !logInfo(*) 'Mesh consits of TETRAHEDRAL elements.' ! Is obvious as only this is possible
           !logInfo(*) 'Mesh type is', MESH%GlobalElemType
@@ -2467,7 +2468,7 @@ ALLOCATE( SpacePositionx(nDirac), &
       logInfo(*) 'Using Rusanov flux. '
      CASE DEFAULT
       logError(*) 'Flux case not defined ! '
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
      ENDSELECT
     !
     SELECT CASE(DISC%Galerkin%DGMethod)
@@ -2484,7 +2485,7 @@ ALLOCATE( SpacePositionx(nDirac), &
            END SELECT
     CASE DEFAULT
          logError(*) 'Wrong DGmethod. Must be 1 or 3.!'
-         call exit(134)
+         call MPI_ABORT(MPI_COMM_WORLD, 134)
     END SELECT
        !
     SELECT CASE(DISC%Galerkin%DGMethod)
@@ -2518,7 +2519,7 @@ ALLOCATE( SpacePositionx(nDirac), &
            DISC%Galerkin%nDegFrMat = (DISC%Galerkin%nPolyMat+1)*(DISC%Galerkin%nPolyMat+2)*(DISC%Galerkin%nPolyMat+3)/6
            IF(DISC%Galerkin%nPolyMat.GT.DISC%Galerkin%nPoly) THEN
              logError(*) 'nPolyMat larger than nPoly. '
-             call exit(134)
+             call MPI_ABORT(MPI_COMM_WORLD, 134)
            ENDIF
 
            IF(MESH%GlobalElemType.EQ.6) THEN
@@ -2528,7 +2529,7 @@ ALLOCATE( SpacePositionx(nDirac), &
                   DISC%Galerkin%nDegFrMat = (DISC%Galerkin%nPolyMat+1)*(DISC%Galerkin%nPolyMat+2)*(DISC%Galerkin%nPolyMat+3)/6
                     IF(DISC%Galerkin%nPolyMat.GT.DISC%Galerkin%nPoly) THEN
                          logError(*) 'nPolyMat larger than nPoly. '
-                         call exit(134)
+                         call MPI_ABORT(MPI_COMM_WORLD, 134)
                     ENDIF
            ENDIF
 
@@ -2648,7 +2649,7 @@ ALLOCATE( SpacePositionx(nDirac), &
                STAT=allocStat                                            )
       IF (allocStat .NE. 0) THEN
          logError(*) 'could not allocate IO%OutputMask in readpar!'
-         call exit(134)
+         call MPI_ABORT(MPI_COMM_WORLD, 134)
       END IF
       !
         IO%Rotation = Rotation
@@ -2656,7 +2657,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           logError(*) 'Space derivatives of polynomials of degree 0 cannot be computed!'
           logError(*) '   Rotations or Seismic Moment Tensor Contributions cannot be outputted!'
           logError(*) '   Increase the polynomial order or choose not to output rotational rates.'
-          call exit(134)
+          call MPI_ABORT(MPI_COMM_WORLD, 134)
         ENDIF
         IF(IO%Rotation.EQ.1) THEN
           logInfo(*) 'Outputting rotational seismograms in addition to translational '                               !
@@ -2688,7 +2689,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           ALLOCATE(IO%RotationMask(3),STAT=allocStat )                                      !
            IF (allocStat .NE. 0) THEN                                                       !
              logError(*) 'could not allocate IO%RotationMask in readpar!'!
-             call exit(134)                                                                           !
+             call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                           !
            END IF
            IO%RotationMask = .FALSE.
            IF(IO%OutputMask(10)) IO%RotationMask(1) = .TRUE.
@@ -2700,7 +2701,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           ALLOCATE(IO%RotationMask(9),STAT=allocStat )                                      !
            IF (allocStat .NE. 0) THEN                                                       !
              logError(*) 'could not allocate IO%RotationMask in readpar!'!
-             call exit(134)                                                                           !
+             call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                           !
            END IF
            IO%RotationMask(1:9) = .TRUE.
          ENDIF
@@ -2709,7 +2710,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           ALLOCATE(IO%RotationMask(4),STAT=allocStat )                                      !
            IF (allocStat .NE. 0) THEN                                                       !
              logError(*) 'could not allocate IO%RotationMask in readpar!'!
-             call exit(134)                                                                           !
+             call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                           !
            END IF
            IO%RotationMask(1:4) = .TRUE.
          ENDIF
@@ -2717,7 +2718,7 @@ ALLOCATE( SpacePositionx(nDirac), &
       ALLOCATE(IO%OutputRegionBounds(6),STAT=allocStat )                                      !
        IF (allocStat .NE. 0) THEN                                                       !
          logError(*) 'could not allocate IO%OutputRegionBounds in readpar!'!
-         call exit(134)                                                                           !
+         call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                           !
        END IF
       IO%OutputRegionBounds(1:6) = OutputRegionBounds(1:6)
       ! Check if all are non-zero and then check if the min and max are not the same
@@ -2727,22 +2728,22 @@ ALLOCATE( SpacePositionx(nDirac), &
 
           IF (OutputRegionBounds(2)-OutputRegionBounds(1) <= 0.0) THEN
               logError(*) 'Please make sure the x bounds are correct'
-              call exit(134)
+              call MPI_ABORT(MPI_COMM_WORLD, 134)
           ENDIF
           IF (OutputRegionBounds(4)-OutputRegionBounds(3) <= 0.0) THEN
               logError(*) 'Please make sure the y bounds are correct'
-              call exit(134)
+              call MPI_ABORT(MPI_COMM_WORLD, 134)
           ENDIF
           IF (OutputRegionBounds(6)-OutputRegionBounds(5) <= 0.0) THEN
               logError(*) 'Please make sure the z bounds are correct'
-              call exit(134)
+              call MPI_ABORT(MPI_COMM_WORLD, 134)
           ENDIF
       END IF
 
 	  ALLOCATE(IO%IntegrationMask(9),STAT=allocstat )                        !
       IF (allocStat .NE. 0) THEN                                             !
         logError(*) 'could not allocate IO%IntegrationMask in readpar!'      !
-        call exit(134)                                                                 !
+        call MPI_ABORT(MPI_COMM_WORLD, 134)                                                                 !
       END IF
       IO%IntegrationMask(1:9) = IntegrationMask(1:9)
 
@@ -2763,7 +2764,7 @@ ALLOCATE( SpacePositionx(nDirac), &
          logInfo0(*) 'Output data is disabled'
       CASE DEFAULT
          logError(*) 'print_format must be {6,10}'
-         call exit(134)
+         call MPI_ABORT(MPI_COMM_WORLD, 134)
       END SELECT
 
       IO%TitleMask( 1) = TRIM(' "x"')
@@ -2851,7 +2852,7 @@ ALLOCATE( SpacePositionx(nDirac), &
       IF (IO%outInterval%printIntervalCriterion.EQ.1.AND.DISC%Galerkin%DGMethod.EQ.3) THEN
         logError(*) 'specifying IO%outInterval%printIntervalCriterion: '
         logError(*) 'When local time stepping is used, only Criterion 2 can be used! '
-        call exit(134)
+        call MPI_ABORT(MPI_COMM_WORLD, 134)
       END IF
       IF (      IO%outInterval%printIntervalCriterion .EQ. 1 &                 !
            .OR. IO%outInterval%printIntervalCriterion .EQ. 3 ) THEN
@@ -2859,7 +2860,7 @@ ALLOCATE( SpacePositionx(nDirac), &
          logInfo0(*) 'Output data are generated '          , & !
               'every ', IO%outInterval%Interval, '. timestep'                  !
          logError(*) 'Time step-wise output only with classic version'
-         call exit(134)
+         call MPI_ABORT(MPI_COMM_WORLD, 134)
       END IF                                                                   !
       IF (      IO%outInterval%printIntervalCriterion .EQ. 2 &                 !
            .OR. IO%outInterval%printIntervalCriterion .EQ. 3 ) THEN
@@ -2885,16 +2886,16 @@ ALLOCATE( SpacePositionx(nDirac), &
          IO%pickDtType = pickDtType
          IF (DISC%Galerkin%DGMethod .ne. 1 .and. IO%pickDtType .ne. 1) THEN
             logError(*) 'Pickpoint sampling every x timestep can only be used with global timesteping'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
          ENDIF
          SELECT CASE (IO%pickDtType)
          CASE (1)
          CASE (2)
             logError(*) 'Time step-wise output only with classic version'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
          CASE DEFAULT
             logError(*) 'PickDtType must be 1 = pickdt or 2 = pickdt*dt'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
          ENDSELECT
 
        ! energy output on = 1, off =0
@@ -2947,7 +2948,7 @@ ALLOCATE( SpacePositionx(nDirac), &
       IF (allocStat .NE. 0) THEN
             logError(*) 'could not allocate',&
                  ' all variables! Ie. Unstructured record Points'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
       END IF
       !
       IO%UnstructRecPoint(:)%X = X(:)
@@ -2990,7 +2991,7 @@ ALLOCATE( SpacePositionx(nDirac), &
                    STAT = allocStat                                )
               IF (allocStat.NE.0) THEN
                    logError(*) 'could not allocate all PGM locations in IO%UnstructRecPoint !'
-                   call exit(134)
+                   call MPI_ABORT(MPI_COMM_WORLD, 134)
               END IF
               DO i = 1, IO%nRecordPoint
                    IO%UnstructRecPoint(i)%X = IO%tmpRecPoint(i)%X
@@ -3012,7 +3013,7 @@ ALLOCATE( SpacePositionx(nDirac), &
             CASE DEFAULT
 
               logError(*) 'Peak Ground Motion Flag in  O U T P U T  must be set to 0 or 1 ! '
-              call exit(134)
+              call MPI_ABORT(MPI_COMM_WORLD, 134)
 
           END SELECT
       !
@@ -3032,7 +3033,7 @@ ALLOCATE( SpacePositionx(nDirac), &
           CASE DEFAULT
 
              logError(*) 'Fault Output Flag in  O U T P U T  must be set to 0 or 1 ! '
-             call exit(134)
+             call MPI_ABORT(MPI_COMM_WORLD, 134)
 
         END SELECT
 
@@ -3046,18 +3047,18 @@ ALLOCATE( SpacePositionx(nDirac), &
         case ("hdf5")
 #ifndef USE_HDF
           logError(*) 'This version does not support HDF5 backends'
-          call exit(134)
+          call MPI_ABORT(MPI_COMM_WORLD, 134)
 #endif
           logInfo0(*) 'Use HDF5 XdmfWriter backend'
         case default
           logError(*) 'Unknown XdmfWriter backend ', io%xdmfWriterBackend
-          call exit(134)
+          call MPI_ABORT(MPI_COMM_WORLD, 134)
       end select
 
       ! Check point config
       if (checkPointInterval .lt. 0) then
         logError(*) 'The interval for checkpoints cannot be negative'
-        call exit(134)
+        call MPI_ABORT(MPI_COMM_WORLD, 134)
       endif
       io%checkpoint%interval = checkPointInterval
       io%checkpoint%filename = checkPointFile
@@ -3084,7 +3085,7 @@ ALLOCATE( SpacePositionx(nDirac), &
          CASE DEFAULT
 
              logError(*) 'Refinement strategy is N O T supported'
-             call exit(134)
+             call MPI_ABORT(MPI_COMM_WORLD, 134)
 
       END SELECT
 
@@ -3094,25 +3095,25 @@ ALLOCATE( SpacePositionx(nDirac), &
         case ("hdf5")
 #ifndef USE_HDF
             logError(*) 'This version does not support HDF5 checkpoints'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
 #endif
             logInfo0(*) 'Using HDF5 checkpoint backend'
         case ("mpio")
 #ifndef USE_MPI
             logError(*) 'This version does not support MPI-IO checkpoints'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
 #endif
             logInfo0(*) 'Using MPI-IO checkpoint backend'
         case ("mpio_async")
 #ifndef USE_MPI
             logError(*) 'This version does not support MPI-IO checkpoints'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
 #endif
             logInfo0(*) 'Using async MPI-IO checkpoint backend'
         case ("sionlib")
 #ifndef USE_SIONLIB
             logError(*) 'This version does not support SIONlib checkpoints'
-            call exit(134)
+            call MPI_ABORT(MPI_COMM_WORLD, 134)
 #endif
             logInfo0(*) 'Using SIONlib checkpoint backend'
         case ("none")
@@ -3172,7 +3173,7 @@ ALLOCATE( SpacePositionx(nDirac), &
     !
     if (DISC%MaxIteration .lt. 10000000) then
       logError(*) 'GK version does not support MaxIteration!'
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
     endif
     logInfo(*) 'Maximum ITERATION number allowed:', DISC%MaxIteration
     !
@@ -3216,7 +3217,7 @@ ALLOCATE( SpacePositionx(nDirac), &
 ! Generated kernels sanity check
     if (NUMBER_OF_QUANTITIES .NE. EQN%nVarTotal) then
       logError(*) 'Generated kernels: The number of quantities defined by the parameter file (', EQN%nVarTotal, ') does not the number of quantities this version was compiled for (', NUMBER_OF_QUANTITIES, ').'
-      call exit(134)
+      call MPI_ABORT(MPI_COMM_WORLD, 134)
     end if
 
     logInfo(*) '<--------------------------------------------------------->'

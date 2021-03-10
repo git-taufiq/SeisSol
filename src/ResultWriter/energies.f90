@@ -49,6 +49,7 @@
 MODULE energies_output_mod
   !---------------------------------------------------------------------------!
   USE TypesDef
+  USE mpi_f08
   !---------------------------------------------------------------------------!
   IMPLICIT NONE
   PRIVATE
@@ -139,7 +140,7 @@ CONTAINS
         IF(stat.NE.0) THEN                                                   !
            logError(*) 'cannot open ',ENERGY_FILE                            !
            logError(*) 'Error status: ', stat                                !
-           call exit(134)                                                              !
+           call MPI_ABORT(MPI_COMM_WORLD, 134)                                                              !
         ENDIF
     ELSE
         ! open file
@@ -152,7 +153,7 @@ CONTAINS
         IF(stat.NE.0) THEN                                                   !
            logError(*) 'cannot open ',ENERGY_FILE                            !
            logError(*) 'Error status: ', stat                                !
-           call exit(134)                                                              !
+           call MPI_ABORT(MPI_COMM_WORLD, 134)                                                              !
         ENDIF
         IF (EQN%Plasticity .EQ. 0) THEN
             WRITE(UNIT_ENERGY,*) '#time KineticEnergy '

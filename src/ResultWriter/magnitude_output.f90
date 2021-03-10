@@ -49,6 +49,7 @@
 MODULE magnitude_output_mod
   !---------------------------------------------------------------------------!
   USE TypesDef
+  USE mpi_f08
   !---------------------------------------------------------------------------!
   IMPLICIT NONE
   PRIVATE
@@ -110,7 +111,7 @@ CONTAINS
         IF(stat.NE.0) THEN                                              !
            logError(*) 'cannot open ',MAG_FILE         !
            logError(*) 'Error status: ', stat                !
-           call exit(134)                                                          !
+           call MPI_ABORT(MPI_COMM_WORLD, 134)                                                          !
         ENDIF
     ELSE
         ! open file
@@ -123,7 +124,7 @@ CONTAINS
         IF(stat.NE.0) THEN                                              !
            logError(*) 'cannot open ',MAG_FILE         !
            logError(*) 'Error status: ', stat                !
-           call exit(134)                                                          !
+           call MPI_ABORT(MPI_COMM_WORLD, 134)                                                          !
         ENDIF
         !
     ENDIF
@@ -203,7 +204,7 @@ CONTAINS
         IF(stat.NE.0) THEN                                              !
            logError(*) 'cannot open ',MAG_FILE         !
            logError(*) 'Error status: ', stat                !
-           call exit(134)                                                          !
+           call MPI_ABORT(MPI_COMM_WORLD, 134)                                                          !
         ENDIF
     ELSE
         ! open file
@@ -216,7 +217,7 @@ CONTAINS
         IF(stat.NE.0) THEN                                              !
            logError(*) 'cannot open ',MAG_FILE         !
            logError(*) 'Error status: ', stat                !
-           call exit(134)                                                          !
+           call MPI_ABORT(MPI_COMM_WORLD, 134)                                                          !
         ENDIF
         WRITE(UNIT_MAG,*) '#time MomentRate FrictionalEnergyRate'
         !

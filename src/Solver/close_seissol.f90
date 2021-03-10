@@ -39,6 +39,7 @@
 #endif
 
 MODULE close_SeisSol_mod
+  USE mpi_f08
   !----------------------------------------------------------------------------
   IMPLICIT NONE
   PRIVATE
@@ -105,7 +106,7 @@ CONTAINS
     DEALLOCATE (pvar,cvar,STAT=deallocStat)
     IF (deallocStat .NE. 0) THEN                                    ! Falls ein Fehler
        logError(*) 'cannot deallocate all arrays!'                  ! aufgetreten ist
-       call exit(134)                                                         ! Programmabbruch
+       call MPI_ABORT(MPI_COMM_WORLD, 134)                                                         ! Programmabbruch
     END IF                                                          !
 
     call c_interoperability_deallocateMemoryManager()
