@@ -446,6 +446,16 @@ void seissol::kernels::Time::computeTaylorExpansion( real         time,
   }
 }
 
+void seissol::kernels::Time::computeBatchedTaylorExpansion(real time,
+                                                           real expansionPoint,
+                                                           real const* timeDerivatives,
+                                                           real timeEvaluated[tensor::Q::size()]) {
+#ifdef ACL_DEVICE
+#else
+  assert(false && "no implementation provided");
+#endif
+}
+
 void seissol::kernels::Time::flopsTaylorExpansion(long long& nonZeroFlops, long long& hardwareFlops) {
   // reset flops
   nonZeroFlops = 0; hardwareFlops = 0;

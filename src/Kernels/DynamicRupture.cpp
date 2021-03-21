@@ -144,6 +144,75 @@ void seissol::kernels::DynamicRupture::spaceTimeInterpolation(  DRFaceInformatio
   }
 }
 
+void seissol::kernels::DynamicRupture::batchedSpaceTimeInterpolation(
+    DRFaceInformation* faceInfo,
+    GlobalData* global,
+    DRGodunovData* godunovData,
+    real** timeDerivativePlus,
+    real** timeDerivativeMinus,
+    real (*QInterpolatedPlus)[CONVERGENCE_ORDER][tensor::QInterpolated::size()],
+    real (*QInterpolatedMinus)[CONVERGENCE_ORDER][tensor::QInterpolated::size()],
+    const size_t batchSize) {
+#ifdef ACL_DEVICE
+  // assert alignments
+#ifndef NDEBUG
+  assert( timeDerivativePlus != nullptr );
+  assert( timeDerivativeMinus != nullptr );
+  assert( ((uintptr_t)timeDerivativePlus) % ALIGNMENT == 0 );
+  assert( ((uintptr_t)timeDerivativeMinus) % ALIGNMENT == 0 );
+  assert( ((uintptr_t)&QInterpolatedPlus[0]) % ALIGNMENT == 0 );
+  assert( ((uintptr_t)&QInterpolatedMinus[0]) % ALIGNMENT == 0 );
+  assert( tensor::Q::size() == tensor::I::size() );
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+  for (unsigned face = 0; face < batchSize; ++face) {
+    unsigned prefetchFace = (face < batchSize - 1) ? face + 1 : face;
+    real *timeDerivativePlus_prefetch = timeDerivativePlus[prefetchFace];
+    real *timeDerivativeMinus_prefetch = timeDerivativeMinus[prefetchFace];
+
+    real degreesOfFreedomPlus[tensor::Q::size()] __attribute__((aligned(PAGESIZE_STACK)));
+    real degreesOfFreedomMinus[tensor::Q::size()] __attribute__((aligned(PAGESIZE_STACK)));
+
+    dynamicRupture::kernel::evaluateAndRotateQAtInterpolationPoints krnl = m_krnlPrototype;
+
+    for (unsigned timeInterval = 0; timeInterval < CONVERGENCE_ORDER; ++timeInterval) {
+      m_timeKernel.computeTaylorExpansion(timePoints[timeInterval],
+                                          0.0,
+                                          timeDerivativePlus[face],
+                                          degreesOfFreedomPlus);
+
+      m_timeKernel.computeTaylorExpansion(timePoints[timeInterval],
+                                          0.0,
+                                          timeDerivativeMinus[face],
+                                          degreesOfFreedomMinus);
+
+      real const *plusPrefetch = (timeInterval < CONVERGENCE_ORDER - 1) ? &QInterpolatedPlus[face][timeInterval + 1][0]
+                                                                        : timeDerivativePlus_prefetch;
+      real const *minusPrefetch = (timeInterval < CONVERGENCE_ORDER - 1) ? &QInterpolatedMinus[face][timeInterval + 1][0]
+                                                                         : timeDerivativeMinus_prefetch;
+
+      DRGodunovData *localQodunovData = &godunovData[face];
+      krnl.QInterpolated = &QInterpolatedPlus[face][timeInterval][0];
+      krnl.Q = degreesOfFreedomPlus;
+      krnl.TinvT = localQodunovData->TinvT;
+      krnl._prefetch.QInterpolated = plusPrefetch;
+      krnl.execute(faceInfo[face].plusSide, 0);
+
+      krnl.QInterpolated = &QInterpolatedMinus[face][timeInterval][0];
+      krnl.Q = degreesOfFreedomMinus;
+      krnl.TinvT = localQodunovData->TinvT;
+      krnl._prefetch.QInterpolated = minusPrefetch;
+      krnl.execute(faceInfo[face].minusSide, faceInfo[face].faceRelation);
+    }
+  }
+#else
+  assert(false && "no implementation provided");
+#endif
+}
+
 void seissol::kernels::DynamicRupture::flopsGodunovState( DRFaceInformation const&  faceInfo,
                                                           long long&                o_nonZeroFlops,
                                                           long long&                o_hardwareFlops )

@@ -52,8 +52,10 @@ namespace seissol {
 
 #ifndef ACL_DEVICE
 #	define MEMKIND_NEIGHBOUR_INTEGRATION seissol::memory::Standard
+#	define MEMKIND_Q_INTERPOLATED seissol::memory::Standard
 #else
 #	define MEMKIND_NEIGHBOUR_INTEGRATION seissol::memory::DeviceUnifiedMemory
+#	define MEMKIND_Q_INTERPOLATED seissol::memory::PinnedMemory
 #endif
 
 struct seissol::initializers::DynamicRupture {
@@ -61,6 +63,8 @@ struct seissol::initializers::DynamicRupture {
   Variable<real*>                                                   timeDerivativeMinus;
   Variable<real[tensor::QInterpolated::size()]>                     imposedStatePlus;
   Variable<real[tensor::QInterpolated::size()]>                     imposedStateMinus;
+  Variable<real[CONVERGENCE_ORDER][tensor::QInterpolated::size()]>  QInterpolatedPlus;
+  Variable<real[CONVERGENCE_ORDER][tensor::QInterpolated::size()]>  QInterpolatedMinus;
   Variable<DRGodunovData>                                           godunovData;
   Variable<real[tensor::fluxSolver::size()]>                        fluxSolverPlus;
   Variable<real[tensor::fluxSolver::size()]>                        fluxSolverMinus;
@@ -75,6 +79,8 @@ struct seissol::initializers::DynamicRupture {
     tree.addVar(     timeDerivativeMinus,             mask,                 1,      seissol::memory::Standard );
     tree.addVar(        imposedStatePlus,             mask,     PAGESIZE_HEAP,      MEMKIND_NEIGHBOUR_INTEGRATION );
     tree.addVar(       imposedStateMinus,             mask,     PAGESIZE_HEAP,      MEMKIND_NEIGHBOUR_INTEGRATION );
+    tree.addVar(        QInterpolatedPlus,            mask,     PAGESIZE_HEAP,      MEMKIND_Q_INTERPOLATED );
+    tree.addVar(       QInterpolatedMinus,            mask,     PAGESIZE_HEAP,      MEMKIND_Q_INTERPOLATED );
     tree.addVar(             godunovData,             mask,                 1,      MEMKIND_NEIGHBOUR_INTEGRATION );
     tree.addVar(          fluxSolverPlus,             mask,                 1,      MEMKIND_NEIGHBOUR_INTEGRATION );
     tree.addVar(         fluxSolverMinus,             mask,                 1,      MEMKIND_NEIGHBOUR_INTEGRATION );

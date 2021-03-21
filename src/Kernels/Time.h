@@ -123,6 +123,11 @@ class seissol::kernels::Time : public TimeBase {
                                  real const*  timeDerivatives,
                                  real         timeEvaluated[tensor::Q::size()] );
 
+  void computeBatchedTaylorExpansion(real time,
+                                     real expansionPoint,
+                                     real const* timeDerivatives,
+                                     real timeEvaluated[tensor::Q::size()]);
+
     void flopsTaylorExpansion(long long& nonZeroFlops, long long& hardwareFlops);
 };
 

@@ -233,10 +233,8 @@ void seissol::time_stepping::TimeCluster::computeSources() {
 #endif
 }
 
+#ifndef ACL_DEVICE
 void seissol::time_stepping::TimeCluster::computeDynamicRupture( seissol::initializers::Layer&  layerData ) {
-#ifdef ACL_DEVICE
-  device.api->putProfilingMark("computeDynamicRupture", device::ProfilingColors::Cyan);
-#endif
   SCOREP_USER_REGION( "computeDynamicRupture", SCOREP_USER_REGION_TYPE_FUNCTION )
 
   m_loopStatistics->begin(m_regionComputeDynamicRupture);
@@ -281,10 +279,59 @@ void seissol::time_stepping::TimeCluster::computeDynamicRupture( seissol::initia
   }
 
   m_loopStatistics->end(m_regionComputeDynamicRupture, layerData.getNumberOfCells());
-#ifdef ACL_DEVICE
-  device.api->popLastProfilingMark();
-#endif
 }
+#else
+void seissol::time_stepping::TimeCluster::computeDynamicRupture( seissol::initializers::Layer&  layerData ) {
+  device.api->putProfilingMark("computeDynamicRupture", device::ProfilingColors::Cyan);
+  SCOREP_USER_REGION( "computeDynamicRupture", SCOREP_USER_REGION_TYPE_FUNCTION )
+
+  m_loopStatistics->begin(m_regionComputeDynamicRupture);
+
+  DRFaceInformation*                    faceInformation                                                   = layerData.var(m_dynRup->faceInformation);
+  DRGodunovData*                        godunovData                                                       = layerData.var(m_dynRup->godunovData);
+  real**                                timeDerivativePlus                                                = layerData.var(m_dynRup->timeDerivativePlus);
+  real**                                timeDerivativeMinus                                               = layerData.var(m_dynRup->timeDerivativeMinus);
+  real                                (*imposedStatePlus)[tensor::QInterpolated::size()]                  = layerData.var(m_dynRup->imposedStatePlus);
+  real                                (*imposedStateMinus)[tensor::QInterpolated::size()]                 = layerData.var(m_dynRup->imposedStateMinus);
+  real                           (*QInterpolatedPlus)[CONVERGENCE_ORDER][tensor::QInterpolated::size()]   = layerData.var(m_dynRup->QInterpolatedPlus);
+  real                           (*QInterpolatedMinus)[CONVERGENCE_ORDER][tensor::QInterpolated::size()]  = layerData.var(m_dynRup->QInterpolatedMinus);
+  seissol::model::IsotropicWaveSpeeds*  waveSpeedsPlus                                                    = layerData.var(m_dynRup->waveSpeedsPlus);
+  seissol::model::IsotropicWaveSpeeds*  waveSpeedsMinus                                                   = layerData.var(m_dynRup->waveSpeedsMinus);
+
+  const size_t size = CONVERGENCE_ORDER * tensor::QInterpolated::size() * layerData.getNumberOfCells() * sizeof(real);
+  const char initValue{0};
+  std::memset(QInterpolatedPlus, initValue, size);
+  std::memset(QInterpolatedMinus, initValue, size);
+  const size_t batchSize = layerData.getNumberOfCells();
+  m_dynamicRuptureKernel.batchedSpaceTimeInterpolation(faceInformation,
+                                                       m_globalDataOnHost,
+                                                       godunovData,
+                                                       timeDerivativePlus,
+                                                       timeDerivativeMinus,
+                                                       QInterpolatedPlus,
+                                                       QInterpolatedMinus,
+                                                       batchSize);
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+  for (unsigned face = 0; face < layerData.getNumberOfCells(); ++face) {
+    e_interoperability.evaluateFrictionLaw( static_cast<int>(faceInformation[face].meshFace),
+                                            QInterpolatedPlus[face],
+                                            QInterpolatedMinus[face],
+                                            imposedStatePlus[face],
+                                            imposedStateMinus[face],
+                                            m_fullUpdateTime,
+                                            m_dynamicRuptureKernel.timePoints,
+                                            m_dynamicRuptureKernel.timeWeights,
+                                            waveSpeedsPlus[face],
+                                            waveSpeedsMinus[face] );
+  }
+
+  m_loopStatistics->end(m_regionComputeDynamicRupture, layerData.getNumberOfCells());
+  device.api->popLastProfilingMark();
+}
+#endif
 
 
 void seissol::time_stepping::TimeCluster::computeDynamicRuptureFlops( seissol::initializers::Layer& layerData,

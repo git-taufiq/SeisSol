@@ -75,8 +75,17 @@ class seissol::kernels::DynamicRupture {
                                   real const*                 timeDerivativeMinus,
                                   real                        QInterpolatedPlus[CONVERGENCE_ORDER][seissol::tensor::QInterpolated::size()],
                                   real                        QInterpolatedMinus[CONVERGENCE_ORDER][seissol::tensor::QInterpolated::size()],
-                              real const*                 timeDerivativePlus_prefetch, 
-                              real const*                 timeDerivativeMinus_prefetch);
+                                  real const*                 timeDerivativePlus_prefetch,
+                                  real const*                 timeDerivativeMinus_prefetch);
+
+  void batchedSpaceTimeInterpolation(DRFaceInformation* faceInfo,
+                                     GlobalData* global,
+                                     DRGodunovData* godunovData,
+                                     real** timeDerivativePlus,
+                                     real** timeDerivativeMinus,
+                                     real (*QInterpolatedPlus)[CONVERGENCE_ORDER][seissol::tensor::QInterpolated::size()],
+                                     real (*QInterpolatedMinus)[CONVERGENCE_ORDER][seissol::tensor::QInterpolated::size()],
+                                     size_t batchSize);
 
     void flopsGodunovState( DRFaceInformation const&  faceInfo,
                             long long&                o_nonZeroFlops,
