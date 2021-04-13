@@ -392,7 +392,20 @@ MODULE ini_model_DR_mod
         call rotateStressToFaultCS(EQN,MESH,DISC%Galerkin%nBndGP,EQN%IniBulk_xx,EQN%IniBulk_yy,EQN%IniBulk_zz,EQN%IniShearXY,EQN%IniShearYZ,EQN%IniShearXZ,EQN%InitialStressInFaultCS,faultParameterizedByTraction)
     endif
 
-    if ((EQN%FL == 103) .OR. (EQN%FL == 3) .OR. (EQN%FL == 4)) then
+    if (EQN%FL == 3) .OR. (EQN%FL == 4)) then
+      allocate(EQN%NucleationStressInFaultCS(DISC%Galerkin%nBndGP,6,MESH%Fault%nSide))
+
+      ! Initialize w/ first-touch
+      !$omp parallel do schedule(static)
+      DO i=1,MESH%fault%nSide
+          EQN%NucleationStressInFaultCS(:,:,i) = 0.0
+      END DO
+      
+      call rotateStressToFaultCS(EQN,MESH,DISC%Galerkin%nBndGP,nuc_xx,nuc_yy,nuc_zz,nuc_xy,nuc_yz,nuc_xz,EQN%NucleationStressInFaultCS,nucleationParameterizedByTraction)
+      deallocate( nuc_xx, nuc_yy, nuc_zz, nuc_xy, nuc_yz, nuc_xz)
+    end if
+
+    if ((EQN%FL == 103) then
       allocate(EQN%NucleationStressInFaultCS(DISC%Galerkin%nBndGP,6,MESH%Fault%nSide))
       allocate(EQN%NucleationStressInFaultCS2(DISC%Galerkin%nBndGP,6,MESH%Fault%nSide))
 
@@ -400,6 +413,7 @@ MODULE ini_model_DR_mod
       !$omp parallel do schedule(static)
       DO i=1,MESH%fault%nSide
           EQN%NucleationStressInFaultCS(:,:,i) = 0.0
+          EQN%NucleationStressInFaultCS2(:,:,i) = 0.0
       END DO
       
       call rotateStressToFaultCS(EQN,MESH,DISC%Galerkin%nBndGP,nuc_xx,nuc_yy,nuc_zz,nuc_xy,nuc_yz,nuc_xz,EQN%NucleationStressInFaultCS,nucleationParameterizedByTraction)
