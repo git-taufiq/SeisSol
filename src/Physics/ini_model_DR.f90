@@ -401,7 +401,8 @@ MODULE ini_model_DR_mod
       DO i=1,MESH%fault%nSide
           EQN%NucleationStressInFaultCS(:,:,i) = 0.0
       END DO
-
+      
+      call rotateStressToFaultCS(EQN,MESH,DISC%Galerkin%nBndGP,nuc_xx,nuc_yy,nuc_zz,nuc_xy,nuc_yz,nuc_xz,EQN%NucleationStressInFaultCS,nucleationParameterizedByTraction)
       call rotateStressToFaultCS(EQN,MESH,DISC%Galerkin%nBndGP,nuc2_xx,nuc2_yy,nuc2_zz,nuc2_xy,nuc2_yz,nuc2_xz,EQN%NucleationStressInFaultCS2,nucleationParameterizedByTraction)
       deallocate( nuc_xx, nuc_yy, nuc_zz, nuc_xy, nuc_yz, nuc_xz)
       deallocate(nuc2_xx,nuc2_yy,nuc2_zz,nuc2_xy,nuc2_yz,nuc2_xz)
